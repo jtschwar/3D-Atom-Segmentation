@@ -121,9 +121,9 @@ class UNet3DTrainer:
             logger.info(f'Training iteration [{self.num_iterations}/{self.max_num_iterations}]. '
                         f'Epoch [{self.num_epochs}/{self.max_num_epochs - 1}]')
 
-            input, target, weight = self._split_training_batch(t)
+            input, target = self._split_training_batch(t)
 
-            output, loss = self._forward_pass(input, target, weight)
+            output, loss = self._forward_pass(input, target)
 
             train_losses.update(loss.item(), self._batch_size(input))
 
@@ -235,22 +235,16 @@ class UNet3DTrainer:
                 return input.to(self.device)
 
         t = _move_to_device(t)
-        weight = None
-        if len(t) == 2:
-            input, target = t
-        else:
-            input, target, weight = t
-        return input, target, weight
+        input, target = t
 
-    def _forward_pass(self, input, target, weight=None):
+        return input, target
+
+    def _forward_pass(self, input, target):
         # forward pass
         output = self.model(input)
 
         # compute the loss
-        if weight is None:
-            loss = self.loss_criterion(output, target)
-        else:
-            loss = self.loss_criterion(output, target, weight)
+        loss = self.loss_criterion(output, target)
 
         return output, loss
 

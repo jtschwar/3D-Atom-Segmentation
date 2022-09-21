@@ -1,4 +1,3 @@
-from utils import number_of_features_per_level, get_class
 import models.utils as utils
 import torch.nn as nn
 
@@ -21,6 +20,7 @@ class UNet3D(nn.Module):
 
         self.encoders = []
         for i, out_feature_num in enumerate(f_maps):
+
             if i == 0:
                 encoder = utils.Encoder(in_channels, out_feature_num,
                                 apply_pooling=False,  # skip pooling in the firs encoder
@@ -36,6 +36,7 @@ class UNet3D(nn.Module):
                                 pool_kernel_size=pool_kernel_size,
                                 padding=conv_padding)
             self.encoders.append(encoder)
+        self.encoders = nn.ModuleList(self.encoders)
 
         self.decoders = []
         reversed_f_maps = list(reversed(f_maps))
@@ -47,12 +48,13 @@ class UNet3D(nn.Module):
 
             out_feature_num = reversed_f_maps[i + 1]
 
-            decoder = utils.Decoder(in_feature_num, out_feature_num,
+            decoder = utils.Decoder(in_feature_num, out_feature_num, 
                             basic_module=basic_module,
                             conv_kernel_size=conv_kernel_size,
                             num_groups=num_groups,
                             padding=conv_padding)
             self.decoders.append(decoder)    
+        self.decoders = nn.ModuleList(self.decoders)
 
         # in the last layer a 1×1 convolution reduces the number of output
         # channels to the number of labels
@@ -63,10 +65,14 @@ class UNet3D(nn.Module):
         else:
             self.final_activation = nn.Softmax(dim=1)
 
+        # import pdb; pdb.set_trace()
+
     def forward(self, x):
+        
         # encoder part
         encoders_features = []
         for encoder in self.encoders:
+
             x = encoder(x)
             # reverse the encoder outputs to be aligned with the decoder
             encoders_features.insert(0, x)

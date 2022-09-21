@@ -20,13 +20,15 @@ def create_conv(in_channels, out_channels, kernel_size, num_groups, padding):
     modules = []
 
 	 # use only one group if the given number of groups is greater than the number of channels
+    
+    num_channels = in_channels
     if in_channels < num_groups:
         num_groups = 1
 
-    modules.append(('groupnorm', nn.GroupNorm(num_groups=num_groups, num_channels=in_channels)))
+    modules.append(('groupnorm', nn.GroupNorm(num_groups=num_groups, num_channels=num_channels)))
 
-    bias = False
-    modules.append(('conv', conv3d(in_channels, out_channels, kernel_size, bias, padding=padding)))
+    # bias = False
+    modules.append(('conv', conv3d(in_channels, out_channels, kernel_size, False, padding=padding)))
 
     modules.append(('ReLU', nn.ReLU(inplace=True)))
 
@@ -139,40 +141,24 @@ class ResNetBlock(nn.Module):
 
         return out
 
-# class AbstractUpsampling(nn.Module):
-#     """
-#     Abstract class for upsampling. A given implementation should upsample a given 5D input tensor using either
-#     interpolation or learned transposed convolution.
-#     """
+class AbstractUpsampling(nn.Module):
+    """
+    Abstract class for upsampling. A given implementation should upsample a given 5D input tensor using either
+    interpolation or learned transposed convolution.
+    """
 
-#     def __init__(self, upsample):
-#         super(AbstractUpsampling, self).__init__()
-#         self.upsample = upsample
+    def __init__(self, upsample):
+        super(AbstractUpsampling, self).__init__()
+        self.upsample = upsample
 
-#     def forward(self, encoder_features, x):
-#         # get the spatial dimensions of the output given the encoder_features
-#         output_size = encoder_features.size()[2:]
-#         # upsample the input and return
-#         return self.upsample(x, output_size)
+    def forward(self, encoder_features, x):
+        # get the spatial dimensions of the output given the encoder_features
+        output_size = encoder_features.size()[2:]
+        # upsample the input and return
+        return self.upsample(x, output_size)
 
 
-# class InterpolateUpsampling(AbstractUpsampling):
-#     """
-#     Args:
-#         mode (str): algorithm used for upsampling:
-#             'nearest' | 'linear' | 'bilinear' | 'trilinear' | 'area'. Default: 'nearest'
-#             used only if transposed_conv is False
-#     """
-
-#     def __init__(self, mode='nearest'):
-#         upsample = partial(self._interpolate, mode=mode)
-#         super().__init__(upsample)
-
-#     @staticmethod
-#     def _interpolate(x, size, mode):
-#         return F.interpolate(x, size=size, mode=mode)
-
-class InterpolateUpsampling(nn.Module):
+class InterpolateUpsampling(AbstractUpsampling):
     """
     Args:
         mode (str): algorithm used for upsampling:
@@ -181,13 +167,29 @@ class InterpolateUpsampling(nn.Module):
     """
 
     def __init__(self, mode='nearest'):
-        # upsample = partial(self._interpolate, mode=mode)
-        # super().__init__(upsample)
-        self.mode = mode
-        super(InterpolateUpsampling, self).__init__()
+        upsample = partial(self._interpolate, mode=mode)
+        super().__init__(upsample)
 
-    def forward(self,size, x):
-        return F.interpolate(x, size=size, mode=self.mode)
+    @staticmethod
+    def _interpolate(x, size, mode):
+        return F.interpolate(x, size=size, mode=mode)
+
+# class InterpolateUpsampling(nn.Module):
+#     """
+#     Args:
+#         mode (str): algorithm used for upsampling:
+#             'nearest' | 'linear' | 'bilinear' | 'trilinear' | 'area'. Default: 'nearest'
+#             used only if transposed_conv is False
+#     """
+
+#     def __init__(self, mode='nearest'):
+#         # upsample = partial(self._interpolate, mode=mode)
+#         # super().__init__(upsample)
+#         self.mode = mode
+#         super(InterpolateUpsampling, self).__init__()
+
+#     def forward(self,size, x):
+#         return F.interpolate(x, size=size, mode=self.mode)
 
 # for some reason this caused stuff to crash...
 class TransposeConvUpsampling(nn.Module):

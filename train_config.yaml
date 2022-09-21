@@ -30,7 +30,7 @@ trainer:
   # how many iterations between validations
   validate_after_iters: 1000
   # how many iterations between tensorboard logging
-  log_after_iters: 100
+  log_after_iters: 25
   # max number of epochs
   max_num_epochs: 200
   # max number of iterations
@@ -122,9 +122,6 @@ loaders:
         - name: RandomFlip
         - name: RandomRotate90
         - name: RandomRotate
-          # rotate only in ZY plane due to anisotropy
-          axes: [[2, 1]]
-          angle_spectrum: 30
           mode: reflect
           # convert target volume to binary mask
         - name: LabelsToMask
