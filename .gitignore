@@ -3,7 +3,3 @@
 checkpoints/
 logs/
 **/ipynb_checkpoints
-
-pytorch3dunet/
-CenterNet3D-pytorch/
-fcos-pytorch/
