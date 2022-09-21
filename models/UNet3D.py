@@ -56,8 +56,7 @@ class UNet3D(nn.Module):
             self.decoders.append(decoder)    
         self.decoders = nn.ModuleList(self.decoders)
 
-        # in the last layer a 1×1 convolution reduces the number of output
-        # channels to the number of labels
+        # in the last layer a 1×1 convolution reduces the number of output channels to the number of labels
         self.final_conv = nn.Conv3d(f_maps[0], out_channels, 1)
 
         if final_sigmoid:
@@ -65,26 +64,22 @@ class UNet3D(nn.Module):
         else:
             self.final_activation = nn.Softmax(dim=1)
 
-        # import pdb; pdb.set_trace()
-
     def forward(self, x):
         
         # encoder part
         encoders_features = []
         for encoder in self.encoders:
-
             x = encoder(x)
+
             # reverse the encoder outputs to be aligned with the decoder
             encoders_features.insert(0, x)
 
-        # remove the last encoder's output from the list
-        # !!remember: it's the 1st in the list
+        # remove the last encoder's output from the list (!!remember: it's the 1st in the list)
         encoders_features = encoders_features[1:]
 
         # decoder part
         for decoder, encoder_features in zip(self.decoders, encoders_features):
-            # pass the output from the corresponding encoder and the output
-            # of the previous decoder
+            # pass the output from the corresponding encoder and the output of the previous decoder
             x = decoder(encoder_features, x)
 
         x = self.final_conv(x)

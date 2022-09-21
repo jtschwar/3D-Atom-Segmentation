@@ -19,8 +19,8 @@ model:
   # number of groups in the groupnorm
   num_groups: 8
   # apply element-wise nn.Sigmoid after the final 1x1 convolution, otherwise apply nn.Softmax
-  # this is only relevant during inference, during training the network outputs logits and it is up to the loss function
-  # to normalize with Sigmoid or Softmax
+  # only relevant for inference, during training the network outputs logits 
+  # and it is up to the loss function to normalize with Sigmoid or Softmax
   final_sigmoid: true
 
 # trainer configuration
@@ -45,8 +45,7 @@ trainer:
 
 # loss function configuration
 loss:
-  # use BCE loss for training
-  name: BCEWithLogitsLoss
+  name: BCEWithLogitsLoss # (BCE loss for training - TODO: Multi Class Atoms)
   # skip last channel in the target containing the labeled nuclei instances
   skip_last_target: true
 
@@ -117,6 +116,12 @@ loaders:
           mode: reflect
         - name: ToTensor
           expand_dims: true
+        # - name: AdditiveGaussianNoise
+        #   scale: [0, 0.25]
+        #   execution_probability: 0.2
+        # - name: AdditivePoissonNoise
+        #   lam: [0, 0.25]
+        #   execution_probability: 0.2
 
       label:
         - name: RandomFlip
