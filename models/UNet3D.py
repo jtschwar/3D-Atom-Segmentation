@@ -17,32 +17,30 @@ class UNet3D(nn.Module):
         
         in_channels = config['in_channels']; out_channels = config['out_channels']
         f_maps = config['f_maps']; num_groups = config['num_groups']
-        final_sigmoid = config['final_sigmoid']
+        final_sigmoid = config['final_sigmoid']; basic_module = config['basic_module']
 
         self.encoders = []
         for i, out_feature_num in enumerate(f_maps):
             if i == 0:
                 encoder = utils.Encoder(in_channels, out_feature_num,
                                 apply_pooling=False,  # skip pooling in the firs encoder
-                                basic_module='DoubleConv',
+                                basic_module=basic_module,
                                 conv_kernel_size=conv_kernel_size,
                                 num_groups=num_groups,
                                 padding=conv_padding)
             else:
                 encoder = utils.Encoder(f_maps[i - 1], out_feature_num,
-                                basic_module='DoubleConv',
+                                basic_module=basic_module,
                                 conv_kernel_size=conv_kernel_size,
                                 num_groups=num_groups,
                                 pool_kernel_size=pool_kernel_size,
                                 padding=conv_padding)
             self.encoders.append(encoder)
 
-        basic_decoder_module = utils.DoubleConv(in_channels,out_channels,False)
-
         self.decoders = []
         reversed_f_maps = list(reversed(f_maps))
         for i in range(len(reversed_f_maps) - 1):
-            if basic_decoder_module == utils.DoubleConv:
+            if basic_module == basic_module:
                 in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
             else:
                 in_feature_num = reversed_f_maps[i]
@@ -50,7 +48,7 @@ class UNet3D(nn.Module):
             out_feature_num = reversed_f_maps[i + 1]
 
             decoder = utils.Decoder(in_feature_num, out_feature_num,
-                            basic_module=basic_decoder_module,
+                            basic_module=basic_module,
                             conv_kernel_size=conv_kernel_size,
                             num_groups=num_groups,
                             padding=conv_padding)

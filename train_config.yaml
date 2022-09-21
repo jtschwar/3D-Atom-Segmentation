@@ -1,9 +1,8 @@
-# Sample configuration file for training a 3D U-Net on a task of predicting the nuclei in 3D stack from the lightsheet
-# microscope. Training done with Binary Cross-Entropy.
-# Training and validation data can be downloaded from: https://osf.io/thxzn/
+# Sample configuration file for training a 3D U-Net to Segment Atoms for AET Tomogram.
+# Training done with Binary Cross-Entropy.
 
 # Device for Training UNET ('cuda' for NVIDA CARDS, 'mps' for M1 Chips, 'cpu' else)
-device: 'mps'
+# device: 'mps'
 
 # model configuration
 model:
@@ -15,6 +14,8 @@ model:
   out_channels: 1
   # number of features at each level of the U-Net
   f_maps: [32, 64, 128, 256]
+  # Apply Either Single or Double Convolution per layer
+  basic_module: 'DoubleConv'
   # number of groups in the groupnorm
   num_groups: 8
   # apply element-wise nn.Sigmoid after the final 1x1 convolution, otherwise apply nn.Softmax
@@ -113,10 +114,6 @@ loaders:
         # randomly rotates the volume with 90 deg across a randomly chosen plane
         - name: RandomRotate90
         - name: RandomRotate
-          # rotate only in ZY plane due to anisotropy
-          axes: [[2, 1]]
-          # rotates by choosing random angle from [-30, 30] deg
-          angle_spectrum: 30
           mode: reflect
         - name: ToTensor
           expand_dims: true

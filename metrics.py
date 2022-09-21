@@ -221,7 +221,7 @@ def get_evaluation_metric(config):
     """
 
     def _metric_class(class_name):
-        m = importlib.import_module('pytorch3dunet.unet3d.metrics')
+        m = importlib.import_module('metrics')
         clazz = getattr(m, class_name)
         return clazz
 

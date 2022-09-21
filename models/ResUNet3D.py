@@ -6,8 +6,8 @@ import torch.nn as nn
 class ResUNet3D(nn.Module):
     """
     Res3DUnet model from
-    `"3D U-Net: Learning Dense Volumetric Segmentation from Sparse Annotation"
-        <https://arxiv.org/pdf/1606.06650.pdf>`.
+    `"Superhuman Accuracy on the SNEMI3D Connectomics Challenge"
+        <https://arxiv.org/pdf/1706.00120.pdf>`.
     Uses `DoubleConv` as a basic_module and nearest neighbor upsampling in the decoder 
     """
 
@@ -15,20 +15,19 @@ class ResUNet3D(nn.Module):
                  num_groups=8, num_levels=4, conv_kernel_size=3, pool_kernel_size=2,
                  conv_padding=1, **kwargs):
         super(ResUNet3D, self).__init__()
-        
 
         encoders = []
         for i, out_feature_num in enumerate(f_maps):
             if i == 0:
                 encoder = utils.Encoder(in_channels, out_feature_num,
                                 apply_pooling=False,  # skip pooling in the firs encoder
-                                basic_module=basic_module,
+                                basic_module='DoubleConv',
                                 conv_kernel_size=conv_kernel_size,
                                 num_groups=num_groups,
                                 padding=conv_padding)
             else:
                 encoder = utils.Encoder(f_maps[i - 1], out_feature_num,
-                                basic_module=basic_module,
+                                basic_module='DoubleConv',
                                 conv_kernel_size=conv_kernel_size,
                                 num_groups=num_groups,
                                 pool_kernel_size=pool_kernel_size,
@@ -47,7 +46,7 @@ class ResUNet3D(nn.Module):
         decoders = []
         reversed_f_maps = list(reversed(f_maps))
         for i in range(len(reversed_f_maps) - 1):
-            if basic_module == utils.DoubleConv:
+            if basic_module == 'DoubleConv':
                 in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
             else:
                 in_feature_num = reversed_f_maps[i]

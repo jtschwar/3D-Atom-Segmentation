@@ -3,32 +3,7 @@ import torch.nn as nn
 import torch
 
 from functools import partial
-from utils import  get_class
 
-# https://github.com/JielongZ/3D-UNet-PyTorch-Implementation
-class ResidualConv(nn.Module):
-    def __init__(self, in_channels, out_channels, stride, padding):
-        super(ResidualConv, self).__init__()
-
-        self.conv_block = nn.Sequential(
-            nn.BatchNorm2d(in_channels),
-            nn.ReLU(),
-            nn.Conv2d(
-                in_channels, out_channels, kernel_size=3, stride=stride, padding=padding
-            ),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-        )
-        
-        self.conv_skip = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1),
-            nn.BatchNorm2d(out_channels),
-        )
-
-    def forward(self, x):
-
-        return self.conv_block(x) + self.conv_skip(x)
 
 def conv3d(in_channels, out_channels, kernel_size, bias, padding):
     return nn.Conv3d(in_channels, out_channels, kernel_size, padding=padding, bias=bias)
@@ -100,8 +75,10 @@ class DoubleConv(nn.Sequential):
             # we're in the encoder path
             conv1_in_channels = in_channels
             conv1_out_channels = out_channels // 2
+
             if conv1_out_channels < in_channels:
                 conv1_out_channels = in_channels
+                
             conv2_in_channels, conv2_out_channels = conv1_out_channels, out_channels
         else:
             # we're in the decoder path, decrease the number of channels in the 1st convolution
@@ -117,22 +94,83 @@ class DoubleConv(nn.Sequential):
                         SingleConv(conv2_in_channels, conv2_out_channels, kernel_size, num_groups,
                                    padding=padding))
 
-class AbstractUpsampling(nn.Module):
+class ResNetBlock(nn.Module):
     """
-    Abstract class for upsampling. A given implementation should upsample a given 5D input tensor using either
-    interpolation or learned transposed convolution.
+    Basic UNet block consisting of a SingleConv followed by the residual block.
+    The SingleConv takes care of increasing/decreasing the number of channels and also ensures that the number
+    of output channels is compatible with the residual block that follows.
+    This block can be used instead of standard DoubleConv in the Encoder module.
+    Motivated by: https://arxiv.org/pdf/1706.00120.pdf
+
+    Notice we use ELU instead of ReLU (order='cge') and put non-linearity after the groupnorm.
     """
 
-    def __init__(self, upsample):
-        super(AbstractUpsampling, self).__init__()
-        self.upsample = upsample
+    def __init__(self, in_channels, out_channels, encoder, kernel_size=3, order='cge', num_groups=8, **kwargs):
+        super(ResNetBlock, self).__init__()
 
-    def forward(self, encoder_features, x):
-        # get the spatial dimensions of the output given the encoder_features
-        output_size = encoder_features.size()[2:]
+        # first convolution
+        self.conv1 = SingleConv(in_channels, out_channels, kernel_size=kernel_size, order=order, num_groups=num_groups)
         
-        # upsample the input and return
-        return self.upsample(x, output_size)
+        # residual block
+        self.conv2 = SingleConv(out_channels, out_channels, kernel_size=kernel_size, order=order, num_groups=num_groups)
+       
+        # remove non-linearity from the 3rd convolution since it's going to be applied after adding the residual
+        n_order = order
+        for c in 'rel':
+            n_order = n_order.replace(c, '')
+        self.conv3 = SingleConv(out_channels, out_channels, kernel_size=kernel_size, order=n_order,
+                                num_groups=num_groups)
+
+        # create non-linearity separately
+        self.non_linearity = nn.ReLU(inplace=True)
+        # self.non_linearity = nn.ELU(inplace=True)
+
+    def forward(self, x):
+        # apply first convolution and save the output as a residual
+        out = self.conv1(x)
+        residual = out
+
+        # residual block
+        out = self.conv2(out)
+        out = self.conv3(out)
+
+        out += residual
+        out = self.non_linearity(out)
+
+        return out
+
+# class AbstractUpsampling(nn.Module):
+#     """
+#     Abstract class for upsampling. A given implementation should upsample a given 5D input tensor using either
+#     interpolation or learned transposed convolution.
+#     """
+
+#     def __init__(self, upsample):
+#         super(AbstractUpsampling, self).__init__()
+#         self.upsample = upsample
+
+#     def forward(self, encoder_features, x):
+#         # get the spatial dimensions of the output given the encoder_features
+#         output_size = encoder_features.size()[2:]
+#         # upsample the input and return
+#         return self.upsample(x, output_size)
+
+
+# class InterpolateUpsampling(AbstractUpsampling):
+#     """
+#     Args:
+#         mode (str): algorithm used for upsampling:
+#             'nearest' | 'linear' | 'bilinear' | 'trilinear' | 'area'. Default: 'nearest'
+#             used only if transposed_conv is False
+#     """
+
+#     def __init__(self, mode='nearest'):
+#         upsample = partial(self._interpolate, mode=mode)
+#         super().__init__(upsample)
+
+#     @staticmethod
+#     def _interpolate(x, size, mode):
+#         return F.interpolate(x, size=size, mode=mode)
 
 class InterpolateUpsampling(nn.Module):
     """
@@ -143,15 +181,16 @@ class InterpolateUpsampling(nn.Module):
     """
 
     def __init__(self, mode='nearest'):
-        upsample = partial(self._interpolate, mode=mode)
-        super().__init__(upsample)
+        # upsample = partial(self._interpolate, mode=mode)
+        # super().__init__(upsample)
+        self.mode = mode
+        super(InterpolateUpsampling, self).__init__()
 
-    @staticmethod
-    def _interpolate(x, size, mode):
-        return F.interpolate(x, size=size, mode=mode)
+    def forward(self,size, x):
+        return F.interpolate(x, size=size, mode=self.mode)
 
 # for some reason this caused stuff to crash...
-class TransposeConvUpsampling(AbstractUpsampling):
+class TransposeConvUpsampling(nn.Module):
     """
     Args:
         in_channels (int): number of input channels for transposed conv
@@ -166,9 +205,15 @@ class TransposeConvUpsampling(AbstractUpsampling):
 
     def __init__(self, in_channels=None, out_channels=None, kernel_size=3, scale_factor=(2, 2, 2)):
         # make sure that the output size reverses the MaxPool3d from the corresponding encoder
-        upsample = nn.ConvTranspose3d(in_channels, out_channels, kernel_size=kernel_size, stride=scale_factor,
-                                      padding=1)
-        super().__init__(upsample)
+       self.upsample = nn.ConvTranspose3d(in_channels, out_channels, kernel_size=kernel_size, stride=scale_factor,
+                                          padding=1)
+
+    def forward(self, encoder_features, x):
+        # get the spatial dimensions of the output given the encoder_features
+        output_size = encoder_features.size()[2:]
+        
+        # upsample the input and return
+        return self.upsample(x, output_size)
 
 class Encoder(nn.Module):
     """
@@ -206,6 +251,11 @@ class Encoder(nn.Module):
               
         if basic_module == 'DoubleConv':                                                                 # Encoder
             self.basic_module = DoubleConv(in_channels, out_channels, True,
+                                            kernel_size=conv_kernel_size,
+                                            num_groups=num_groups,
+                                            padding=padding)
+        elif basic_module == 'ResNetBlock':
+            self.basic_module = ResNetBlock(in_channels, out_channels, True,
                                             kernel_size=conv_kernel_size,
                                             num_groups=num_groups,
                                             padding=padding)
