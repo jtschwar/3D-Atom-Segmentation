@@ -7,7 +7,7 @@
 # model configuration
 model:
   # model class, e.g. UNet3D, ResUNet3D
-  name: UNet3D
+  name: ResUNet3D
   # number of features at each level of the U-Net
   f_maps: [32, 64, 128, 256]
   # number of groups in the groupnorm
@@ -22,7 +22,7 @@ trainer:
   # path to the checkpoint directory
   checkpoint_dir: CHECKPOINT_DIR
   # how many iterations between validations
-  validate_after_iters: 1000
+  validate_after_iters: 100
   # how many iterations between tensorboard logging
   log_after_iters: 25
   # max number of epochs
@@ -64,7 +64,7 @@ lr_scheduler:
   # factor by which learning rate will be reduced
   factor: 0.2
   # number of *validation runs* with no improvement after which learning rate will be reduced
-  patience: 8
+  patience: 5
 
 # data loaders configuration
 loaders:
@@ -89,9 +89,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [120, 120, 120]
+      patch_shape: [140, 140, 140]
       # train stride between patches
-      stride_shape: [30, 30, 30]
+      stride_shape: [35, 35, 35]
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 
@@ -129,9 +129,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [120, 120, 120]
+      patch_shape: [140, 140, 140]
       # train stride between patches
-      stride_shape: [120, 120, 120]
+      stride_shape: [140, 140, 140]
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 
@@ -143,6 +143,6 @@ loaders:
           expand_dims: true
       label:
         - name: LabelsToMask
-          append_label: true
+          append_label: false
         - name: ToTensor
           expand_dims: false

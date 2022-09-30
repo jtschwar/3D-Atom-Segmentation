@@ -208,9 +208,9 @@ class AETUNetTrainer:
             for i, t in enumerate(self.loaders['val']):
                 logger.info(f'Validation iteration {i}')
 
-                input, target, weight = self._split_training_batch(t)
+                input, target = self._split_training_batch(t)
 
-                output, loss = self._forward_pass(input, target, weight)
+                output, loss = self._forward_pass(input, target)
                 val_losses.update(loss.item(), self._batch_size(input))
 
                 if i % 100 == 0:
