@@ -15,7 +15,7 @@ class ResUNet3D(nn.Module):
         super(ResUNet3D, self).__init__()
 
         f_maps = config['f_maps']; num_groups = config['num_groups']
-        final_sigmoid = config['final_sigmoid']; basic_module = config['basic_module']
+        final_sigmoid = config['final_sigmoid']
 
         in_channels = 1; out_channels = 1; basic_module = 'ResNetBlock'
 
@@ -36,8 +36,7 @@ class ResUNet3D(nn.Module):
                                 num_groups=num_groups,
                                 pool_kernel_size=pool_kernel_size,
                                 padding=conv_padding)
-
-        self.encoders.append(self.encoder)
+            self.encoders.append(self.encoder)
         self.encoders = nn.ModuleList(self.encoders)
        
         # create decoder path
@@ -59,32 +58,28 @@ class ResUNet3D(nn.Module):
             self.decoders.append(decoder)  
         self.decoders = nn.ModuleList(self.decoders)    
         
-
-        # in the last layer a 1×1 convolution reduces the number of output
-        # channels to the number of labels
+        # in the last layer a 1×1 convolution reduces the number of output channels to the number of labels
         self.final_conv = nn.Conv3d(f_maps[0], out_channels, 1)
 
-        if final_sigmoid:
-            self.final_activation = nn.Sigmoid()
-        else:
-            self.final_activation = nn.Softmax(dim=1)
+        if final_sigmoid: self.final_activation = nn.Sigmoid()
+        else:             self.final_activation = nn.Softmax(dim=1)
 
     def forward(self, x):
+
         # encoder part
         encoders_features = []
         for encoder in self.encoders:
             x = encoder(x)
+
             # reverse the encoder outputs to be aligned with the decoder
             encoders_features.insert(0, x)
 
-        # remove the last encoder's output from the list
-        # !!remember: it's the 1st in the list
+        # remove the last encoder's output from the list (!!remember: it's the 1st in the list)
         encoders_features = encoders_features[1:]
 
         # decoder part
         for decoder, encoder_features in zip(self.decoders, encoders_features):
-            # pass the output from the corresponding encoder and the output
-            # of the previous decoder
+            # pass the output from the corresponding encoder and the output of the previous decoder
             x = decoder(encoder_features, x)
 
         x = self.final_conv(x)

@@ -164,9 +164,7 @@ class AETUNetTrainer:
                 
                 # compute eval criterion
                 if not self.skip_train_validation:
-                    if target.shape == output.shape: eval_score = self.eval_criterion(output, target)
-                    else: eval_score = self.eval_criterion(output[0,0,], target[0,0,])
-                    # eval_score = self.eval_criterion(output, target)
+                    eval_score = self.eval_criterion(output, target)
                     train_eval_scores.update(eval_score.item(), self._batch_size(input))
 
                 # log stats, params and images
@@ -218,9 +216,7 @@ class AETUNetTrainer:
                 if i % 100 == 0:
                     self._log_images(input, target, output, 'val_')
 
-                if target.shape == output.shape: eval_score = self.eval_criterion(output, target)
-                else: eval_score = self.eval_criterion(output[0,0,], target[0,0,])
-                # eval_score = self.eval_criterion(output, target)
+                eval_score = self.eval_criterion(output, target)
                 val_scores.update(eval_score.item(), self._batch_size(input))
 
                 if self.validate_iters is not None and self.validate_iters <= i:

@@ -141,7 +141,7 @@ class ResNetBlock(nn.Module):
     def forward(self, x):
         # apply first convolution and save the output as a residual
         out = self.conv1(x)
-        residual = out.copy()
+        residual = out
 
         # residual block
         out = self.conv2(out)

@@ -6,7 +6,7 @@
 
 # model configuration
 model:
-  # model class, e.g. UNet3D, ResidualUNet3D
+  # model class, e.g. UNet3D, ResUNet3D
   name: UNet3D
   # number of features at each level of the U-Net
   f_maps: [32, 64, 128, 256]
@@ -41,7 +41,7 @@ trainer:
 loss:
   name: BCEWithLogitsLoss # (BCE loss for training)
   # skip last channel in the target containing the labeled nuclei instances
-  skip_last_target: true
+  skip_last_target: false
 
 # optimizer configuration
 optimizer:
@@ -89,9 +89,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [150, 150, 150]
+      patch_shape: [120, 120, 120]
       # train stride between patches
-      stride_shape: [35, 35, 35]
+      stride_shape: [30, 30, 30]
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 
@@ -107,12 +107,6 @@ loaders:
           mode: reflect
         - name: ToTensor
           expand_dims: true
-        # - name: AdditiveGaussianNoise
-        #   scale: [0, 0.25]
-        #   execution_probability: 0.2
-        # - name: AdditivePoissonNoise
-        #   lam: [0, 0.25]
-        #   execution_probability: 0.2
 
       label:
         - name: RandomFlip
@@ -121,8 +115,7 @@ loaders:
           mode: reflect
           # convert target volume to binary mask
         - name: LabelsToMask
-          # append ground truth labels in the last channel of the target for evaluation metric computation
-          append_label: true
+          append_label: false
         - name: ToTensor
           expand_dims: false
 
@@ -136,9 +129,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [150, 150, 150]
+      patch_shape: [120, 120, 120]
       # train stride between patches
-      stride_shape: [150, 150, 150]
+      stride_shape: [120, 120, 120]
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 

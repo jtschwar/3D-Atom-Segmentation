@@ -68,8 +68,6 @@ def save_network_output(output_path, output, logger=None):
 
 
 loggers = {}
-
-
 def get_logger(name, level=logging.INFO):
     global loggers
     if loggers.get(name) is not None:
@@ -255,7 +253,7 @@ def get_tensorboard_formatter(formatter_config):
         return DefaultTensorboardFormatter()
 
     class_name = formatter_config['name']
-    m = importlib.import_module('pytorch3dunet.unet3d.utils')
+    m = importlib.import_module('utils')
     clazz = getattr(m, class_name)
     return clazz(**formatter_config)
 
