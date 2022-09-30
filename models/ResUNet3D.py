@@ -1,63 +1,63 @@
-from utils import number_of_features_per_level, get_class
-import model_utils as utils
+import models.utils as utils
 import torch.nn as nn
 
 
 class ResUNet3D(nn.Module):
     """
     Res3DUnet model from
-    `"Superhuman Accuracy on the SNEMI3D Connectomics Challenge"
-        <https://arxiv.org/pdf/1706.00120.pdf>`.
-    Uses `DoubleConv` as a basic_module and nearest neighbor upsampling in the decoder 
+    "Deep Residual 3D U-Net for Joint Segmentation"
+        <https://arxiv.org/abs/2006.14215>`.
+    Uses `Residual Blocks` as a basic_module and nearest neighbor upsampling in the decoder 
     """
 
-    def __init__(self, in_channels, out_channels, final_sigmoid, basic_module, f_maps=64,
-                 num_groups=8, num_levels=4, conv_kernel_size=3, pool_kernel_size=2,
+    def __init__(self, config, conv_kernel_size=3, pool_kernel_size=2,
                  conv_padding=1, **kwargs):
         super(ResUNet3D, self).__init__()
 
-        encoders = []
+        f_maps = config['f_maps']; num_groups = config['num_groups']
+        final_sigmoid = config['final_sigmoid']; basic_module = config['basic_module']
+
+        in_channels = 1; out_channels = 1; basic_module = 'ResNetBlock'
+
+        # create encoder path
+        self.encoders = []
         for i, out_feature_num in enumerate(f_maps):
             if i == 0:
-                encoder = utils.Encoder(in_channels, out_feature_num,
-                                apply_pooling=False,  # skip pooling in the firs encoder
-                                basic_module='DoubleConv',
+                self.encoder = utils.Encoder(in_channels, out_feature_num,
+                                apply_pooling=False,  # skip pooling in the first encoder
+                                basic_module=basic_module,
                                 conv_kernel_size=conv_kernel_size,
                                 num_groups=num_groups,
                                 padding=conv_padding)
             else:
-                encoder = utils.Encoder(f_maps[i - 1], out_feature_num,
-                                basic_module='DoubleConv',
+                self.encoder = utils.Encoder(f_maps[i - 1], out_feature_num,
+                                basic_module=basic_module,
                                 conv_kernel_size=conv_kernel_size,
                                 num_groups=num_groups,
                                 pool_kernel_size=pool_kernel_size,
                                 padding=conv_padding)
 
-        encoders.append(encoder)
-
-        # create encoder path
-        self.encoders = self.create_encoders(in_channels, f_maps, basic_module, conv_kernel_size, conv_padding, layer_order,
-                                            num_groups, pool_kernel_size)
-
+        self.encoders.append(self.encoder)
+        self.encoders = nn.ModuleList(self.encoders)
+       
         # create decoder path
-        self.decoders = self.create_decoders(f_maps, basic_module, conv_kernel_size, conv_padding, layer_order, num_groups,
-                                            upsample=True)
-
-        decoders = []
+        self.decoders = []
         reversed_f_maps = list(reversed(f_maps))
         for i in range(len(reversed_f_maps) - 1):
-            if basic_module == 'DoubleConv':
+            if basic_module == basic_module:
                 in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
             else:
                 in_feature_num = reversed_f_maps[i]
 
-        out_feature_num = reversed_f_maps[i + 1]
+            out_feature_num = reversed_f_maps[i + 1]
 
-        decoder = utils.Decoder(in_feature_num, out_feature_num,
-                          basic_module=basic_module,
-                          conv_kernel_size=conv_kernel_size,
-                          num_groups=num_groups,
-                          padding=conv_padding)
+            decoder = utils.Decoder(in_feature_num, out_feature_num,
+                            basic_module=basic_module,
+                            conv_kernel_size=conv_kernel_size,
+                            num_groups=num_groups,
+                            padding=conv_padding)
+            self.decoders.append(decoder)  
+        self.decoders = nn.ModuleList(self.decoders)    
         
 
         # in the last layer a 1×1 convolution reduces the number of output

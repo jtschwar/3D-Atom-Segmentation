@@ -8,14 +8,8 @@
 model:
   # model class, e.g. UNet3D, ResidualUNet3D
   name: UNet3D
-  # number of input channels to the model
-  in_channels: 1
-  # number of output channels
-  out_channels: 1
   # number of features at each level of the U-Net
   f_maps: [32, 64, 128, 256]
-  # Apply Either Single or Double Convolution per layer
-  basic_module: 'DoubleConv'
   # number of groups in the groupnorm
   num_groups: 8
   # apply element-wise nn.Sigmoid after the final 1x1 convolution, otherwise apply nn.Softmax
@@ -45,7 +39,7 @@ trainer:
 
 # loss function configuration
 loss:
-  name: BCEWithLogitsLoss # (BCE loss for training - TODO: Multi Class Atoms)
+  name: BCEWithLogitsLoss # (BCE loss for training)
   # skip last channel in the target containing the labeled nuclei instances
   skip_last_target: true
 
@@ -59,10 +53,7 @@ optimizer:
 # evaluation metric
 eval_metric:
   # use average precision metric
-  name: BlobsAveragePrecision
-  # values on which the nuclei probability maps will be thresholded for AP computation
-  thresholds: [0.4, 0.5, 0.6, 0.7, 0.8]
-  metric: 'ap' # average precision or accuracy
+  name: DiceCoefficient
 
 # learning rate scheduler configuration
 lr_scheduler:
@@ -98,9 +89,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [80, 170, 170]
+      patch_shape: [150, 150, 150]
       # train stride between patches
-      stride_shape: [20, 40, 40]
+      stride_shape: [35, 35, 35]
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 
@@ -145,9 +136,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [80, 170, 170]
+      patch_shape: [150, 150, 150]
       # train stride between patches
-      stride_shape: [80, 170, 170]
+      stride_shape: [150, 150, 150]
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 

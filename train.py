@@ -6,7 +6,7 @@ from config import load_config
 from utils import get_logger
 
 import datasets.utils as ds_utils
-from models import UNet3D
+from models import UNet3D, ResUNet3D
 import metrics, losses
 import trainer
 import utils 
@@ -29,6 +29,10 @@ if manual_seed is not None:
 # Create the model
 if config['model']['name'] == 'UNet3D': 
     model = UNet3D.UNet3D(config['model'])
+elif config['model']['name'] == 'ResUNet3D': 
+    model = ResUNet3D.ResUNet3D(config['model'])
+else:
+    assert('Incorrect Model Passed! Only Supported Models are UNet3D and ResUNet3D')
 
 # use DataParallel if more than 1 GPU available
 device = config['device']
@@ -65,7 +69,7 @@ tensorboard_formatter = utils.get_tensorboard_formatter(trainer_config.pop('tens
 # Create trainer
 resume = trainer_config.pop('resume', None)
 
-trainer = trainer.UNet3DTrainer(model=model,
+trainer = trainer.AETUNetTrainer(model=model,
                                 optimizer=optimizer,
                                 lr_scheduler=lr_scheduler,
                                 loss_criterion=loss_criterion,

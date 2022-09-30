@@ -5,13 +5,13 @@ import torch.nn as nn
 import torch
 
 
-logger = utils.get_logger('UNet3DTrainer')
+logger = utils.get_logger('AET3DUNetTrainer')
 
-class UNet3DTrainer:
-    """3D UNet trainer.
+class AETUNetTrainer:
+    """UNet trainer for AET Tomograms.
 
     Args:
-        model (Unet3D): UNet 3D model to be trained
+        model: Deep Learning 3D CNN model to be trained
         optimizer (nn.optim.Optimizer): optimizer used for training
         lr_scheduler (torch.optim.lr_scheduler._LRScheduler): learning rate scheduler
             WARN: bear in mind that lr_scheduler.step() is invoked after every validation step
@@ -21,7 +21,7 @@ class UNet3DTrainer:
         eval_criterion (callable): used to compute training/validation metric (such as Dice, IoU, AP or Rand score)
             saving the best checkpoint is based on the result of this function on the validation set
         device (torch.device): device to train on
-        loaders (dict): 'train' and 'val' loaders
+        loade rs (dict): 'train' and 'val' loaders
         checkpoint_dir (string): dir for saving checkpoints and tensorboard logs
         max_num_epochs (int): maximum number of epochs
         max_num_iterations (int): maximum number of iterations
@@ -164,7 +164,9 @@ class UNet3DTrainer:
                 
                 # compute eval criterion
                 if not self.skip_train_validation:
-                    eval_score = self.eval_criterion(output, target)
+                    if target.shape == output.shape: eval_score = self.eval_criterion(output, target)
+                    else: eval_score = self.eval_criterion(output[0,0,], target[0,0,])
+                    # eval_score = self.eval_criterion(output, target)
                     train_eval_scores.update(eval_score.item(), self._batch_size(input))
 
                 # log stats, params and images
@@ -216,7 +218,9 @@ class UNet3DTrainer:
                 if i % 100 == 0:
                     self._log_images(input, target, output, 'val_')
 
-                eval_score = self.eval_criterion(output, target)
+                if target.shape == output.shape: eval_score = self.eval_criterion(output, target)
+                else: eval_score = self.eval_criterion(output[0,0,], target[0,0,])
+                # eval_score = self.eval_criterion(output, target)
                 val_scores.update(eval_score.item(), self._batch_size(input))
 
                 if self.validate_iters is not None and self.validate_iters <= i:

@@ -14,10 +14,12 @@ class UNet3D(nn.Module):
                  conv_padding=1, **kwargs):
         super(UNet3D, self).__init__()
         
-        in_channels = config['in_channels']; out_channels = config['out_channels']
         f_maps = config['f_maps']; num_groups = config['num_groups']
-        final_sigmoid = config['final_sigmoid']; basic_module = config['basic_module']
+        final_sigmoid = config['final_sigmoid']
 
+        in_channels = 1; out_channels = 1; basic_module = 'DoubleConv'
+
+        # create encoder path
         self.encoders = []
         for i, out_feature_num in enumerate(f_maps):
 
@@ -38,6 +40,7 @@ class UNet3D(nn.Module):
             self.encoders.append(encoder)
         self.encoders = nn.ModuleList(self.encoders)
 
+        # create decoder path
         self.decoders = []
         reversed_f_maps = list(reversed(f_maps))
         for i in range(len(reversed_f_maps) - 1):
