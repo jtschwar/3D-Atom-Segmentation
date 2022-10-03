@@ -36,9 +36,6 @@ else:
 
 # use DataParallel if more than 1 GPU available
 device = config['device']
-if torch.cuda.device_count() > 1 and not device.type == 'cpu':
-    model = nn.DataParallel(model)
-    logger.info(f'Using {torch.cuda.device_count()} GPUs for training')
 
 # Move model into GPUs
 logger.info(f"Sending the model to '{config['device']}'")

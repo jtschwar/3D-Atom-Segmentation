@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch
 
 from datasets.utils import get_test_loaders
+from models import UNet3D, ResUNet3D
 from config import load_config
-import models, utils
+import utils
 
 logger = utils.get_logger('UNet3DPredict')
 
@@ -12,7 +13,7 @@ def _get_predictor(model, output_dir, config):
     predictor_config = config.get('predictor', {})
     class_name = predictor_config.get('name', 'StandardPredictor')
 
-    m = importlib.import_module('unet3d.predictor')
+    m = importlib.import_module('predictor')
     predictor_class = getattr(m, class_name)
 
     return predictor_class(model, output_dir, config, **predictor_config)
@@ -22,7 +23,9 @@ config = load_config()
 
 # Create the model
 if config['model']['name'] == 'UNet3D': 
-    model = models.UNet3D(config)
+    model = UNet3D.UNet3D(config)
+elif config['model']['name'] == 'ResUNet3D': 
+    model = ResUNet3D.ResUNet3D(config['model'])
 
 # Load model state
 model_path = config['model_path']

@@ -80,7 +80,7 @@ class AETUNetTrainer:
         self.num_iterations = num_iterations
         self.num_epochs = num_epoch
         self.skip_train_validation = skip_train_validation
-
+        
         if resume is not None:
             logger.info(f"Loading checkpoint '{resume}'...")
             state = utils.load_checkpoint(resume, self.model, self.optimizer)
@@ -92,6 +92,11 @@ class AETUNetTrainer:
             self.num_iterations = state['num_iterations']
             self.num_epochs = state['num_epochs']
             self.checkpoint_dir = os.path.split(resume)[0]
+
+        # Use Data Parallel if Multiple GPUs are Available 
+        if torch.cuda.device_count() > 1 and not device.type == 'cpu':
+            self.model = nn.DataParallel(self.model)
+            logger.info(f'Using {torch.cuda.device_count()} GPUs for training')
 
     def fit(self):
         for _ in range(self.num_epochs, self.max_num_epochs):

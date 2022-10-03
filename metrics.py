@@ -5,7 +5,6 @@ import importlib
 import torch
 
 from utils import get_logger, expand_as_one_hot, convert_to_numpy
-# from seg_metrics import AveragePrecision, Accuracy
 from losses import compute_per_channel_dice
 
 logger = get_logger('EvalMetric')
