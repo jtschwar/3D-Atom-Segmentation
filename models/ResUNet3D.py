@@ -5,8 +5,8 @@ import torch.nn as nn
 class ResUNet3D(nn.Module):
     """
     Res3DUnet model from
-    "Deep Residual 3D U-Net for Joint Segmentation"
-        <https://arxiv.org/abs/2006.14215>`.
+    "Deep Residual 3D U-Net for Joint Segmentation" <https://arxiv.org/abs/2006.14215>`
+    and "Residual 3D U-Net with Localization for Brain Tumor Segmentation" <https://link.springer.com/chapter/10.1007/978-3-031-08999-2_33>
     Uses `Residual Blocks` as a basic_module and nearest neighbor upsampling in the decoder 
     """
 
@@ -43,10 +43,11 @@ class ResUNet3D(nn.Module):
         self.decoders = []
         reversed_f_maps = list(reversed(f_maps))
         for i in range(len(reversed_f_maps) - 1):
-            if basic_module == basic_module:
-                in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
-            else:
-                in_feature_num = reversed_f_maps[i]
+            # if basic_module == 'DoubleConv':
+            #     in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
+            # else:
+            #     in_feature_num = reversed_f_maps[i]
+            in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
 
             out_feature_num = reversed_f_maps[i + 1]
 

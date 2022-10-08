@@ -23,7 +23,7 @@ config = load_config()
 
 # Create the model
 if config['model']['name'] == 'UNet3D': 
-    model = UNet3D.UNet3D(config)
+    model = UNet3D.UNet3D(config['model'])
 elif config['model']['name'] == 'ResUNet3D': 
     model = ResUNet3D.ResUNet3D(config['model'])
 

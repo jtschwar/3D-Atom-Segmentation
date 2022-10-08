@@ -170,32 +170,6 @@ class Normalize:
         norm_0_1 = (m - self.min_value) / self.value_range
         return np.clip(2 * norm_0_1 - 1, -1, 1)
 
-class AdditiveGaussianNoise:
-    def __init__(self, random_state, scale=(0.0, 1.0), execution_probability=0.1, **kwargs):
-        self.execution_probability = execution_probability
-        self.random_state = random_state
-        self.scale = scale
-
-    def __call__(self, m):
-        if self.random_state.uniform() < self.execution_probability:
-            std = self.random_state.uniform(self.scale[0], self.scale[1])
-            gaussian_noise = self.random_state.normal(0, std, size=m.shape)
-            return m + gaussian_noise
-        return m
-
-class AdditivePoissonNoise:
-    def __init__(self, random_state, lam=(0.0, 1.0), execution_probability=0.1, **kwargs):
-        self.execution_probability = execution_probability
-        self.random_state = random_state
-        self.lam = lam
-
-    def __call__(self, m):
-        if self.random_state.uniform() < self.execution_probability:
-            lam = self.random_state.uniform(self.lam[0], self.lam[1])
-            poisson_noise = self.random_state.poisson(lam, size=m.shape)
-            return m + poisson_noise
-        return m
-
 class ToTensor:
     """
     Converts a given input numpy.ndarray into torch.Tensor. Adds additional 'channel' axis when the input is 3D

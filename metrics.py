@@ -194,29 +194,6 @@ class GenericAveragePrecision:
         return target
 
 
-class BlobsAveragePrecision(GenericAveragePrecision):
-    """
-    Computes Average Precision given foreground prediction and ground truth instance segmentation.
-    """
-
-    def __init__(self, thresholds=None, metric='ap', min_instance_size=None, input_channel=0, **kwargs):
-        super().__init__(min_instance_size=min_instance_size, use_last_target=True, metric=metric)
-        if thresholds is None:
-            thresholds = [0.4, 0.5, 0.6, 0.7, 0.8]
-        assert isinstance(thresholds, list)
-        self.thresholds = thresholds
-        self.input_channel = input_channel
-
-    def input_to_seg(self, input, target=None):
-        input = input[self.input_channel]
-        segs = []
-        for th in self.thresholds:
-            # threshold and run connected components
-            mask = (input > th).astype(np.uint8)
-            seg = measure.label(mask, background=0, connectivity=1)
-            segs.append(seg)
-        return np.stack(segs)
-
 def _iou_matrix(gt, seg):
     # relabel gt and seg for smaller memory footprint of contingency table
     gt = _relabel(gt)

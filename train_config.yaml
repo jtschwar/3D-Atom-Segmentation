@@ -7,7 +7,7 @@
 # model configuration
 model:
   # model class, e.g. UNet3D, ResUNet3D
-  name: ResUNet3D
+  name: UNet3D
   # number of features at each level of the U-Net
   f_maps: [32, 64, 128, 256]
   # number of groups in the groupnorm
@@ -20,26 +20,26 @@ model:
 # trainer configuration
 trainer:
   # path to the checkpoint directory
-  checkpoint_dir: CHECKPOINT_DIR
+  checkpoint_dir: UNet_CHECKPOINT_DIR
   # how many iterations between validations
   validate_after_iters: 100
   # how many iterations between tensorboard logging
   log_after_iters: 25
   # max number of epochs
-  max_num_epochs: 200
+  max_num_epochs: 10
   # max number of iterations
-  max_num_iterations: 60000
+  max_num_iterations: 20000
   # model with higher eval score is considered better
   eval_score_higher_is_better: True
-  # path to latest checkpoint; if provided the training will be resumed from that checkpoint
-  resume: null
   # path to the best_checkpoint.pytorch; to be used for fine-tuning the model with additional ground truth
   # make sure to decrease the learning rate in the optimizer config accordingly
-  pre_trained: null
+  resume: Null #CHECKPOINT_DIR/best_checkpoint.pytorch
 
 # loss function configuration
 loss:
   name: BCEWithLogitsLoss # (BCE loss for training)
+  # name: WeightedCrossEntropyLoss
+  # name: BCEDiceLoss
   # skip last channel in the target containing the labeled nuclei instances
   skip_last_target: false
 
@@ -62,9 +62,9 @@ lr_scheduler:
   # use 'max' if eval_score_higher_is_better=True, 'min' otherwise
   mode: max
   # factor by which learning rate will be reduced
-  factor: 0.2
+  factor: 0.25
   # number of *validation runs* with no improvement after which learning rate will be reduced
-  patience: 5
+  patience: 8
 
 # data loaders configuration
 loaders:
@@ -89,9 +89,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [140, 140, 140]
+      patch_shape: [140, 140, 140] 
       # train stride between patches
-      stride_shape: [35, 35, 35]
+      stride_shape: [35, 35, 35]  
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 
@@ -129,9 +129,9 @@ loaders:
     slice_builder:
       name: SliceBuilder
       # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
-      patch_shape: [140, 140, 140]
+      patch_shape: [140, 140, 140]   
       # train stride between patches
-      stride_shape: [140, 140, 140]
+      stride_shape: [70, 70, 70] 
       # probability of accepting patches which do not fulfil the threshold criterion
       slack_acceptance: 0.01
 
