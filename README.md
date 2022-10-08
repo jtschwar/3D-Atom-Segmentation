@@ -7,5 +7,6 @@ This package uses experimental reconstructions and labeled coordinates from data
   2. [Observing crystal nucleation in four dimensions using atomic electron tomography](https://www.nature.com/articles/s41586-019-1317-x)
   3. [Determining the three-dimensional atomic structure of an amorphous solid](https://www.nature.com/articles/s41586-021-03354-0)
   4. [Three-dimensional atomic packing in amorphous solids with liquid-like structure](https://www.nature.com/articles/s41563-021-01114-z)
+  5. [Simultaneous Successive Twinning Captured by Atomic Electron Tomography](https://pubs.acs.org/doi/10.1021/acsnano.1c07772?goto=supporting-info)
 
 If you have any questions, feel free to contact - Jonathan Schwartz: jtschw@umich.edu
