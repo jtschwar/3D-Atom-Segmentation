@@ -75,7 +75,7 @@ class StandardPredictor:
 
         logger.info(f'The shape of the output prediction maps (CDHW): {prediction_maps_shape}')
 
-        patch_halo = self.predictor_config.get('patch_halo', (4, 8, 8))
+        patch_halo = self.predictor_config.get('patch_halo', (14, 14, 14))
         self._validate_halo(patch_halo, self.config['loaders']['test']['slice_builder'])
         logger.info(f'Using patch_halo: {patch_halo}')
 

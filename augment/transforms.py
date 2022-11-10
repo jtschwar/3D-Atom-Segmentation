@@ -1,13 +1,8 @@
 from scipy.ndimage import rotate, map_coordinates, gaussian_filter, convolve
-from skimage.segmentation import find_boundaries
 from skimage.filters import gaussian
-from skimage import measure
-import importlib, random
+import importlib, random, time
 import numpy as np
 import torch
-
-# Using fixed random state for reproducibility; 
-GLOBAL_RANDOM_STATE = np.random.RandomState(47)
 
 class Compose(object):
     def __init__(self, transforms):
@@ -156,6 +151,7 @@ class Standardize:
 
         return (m - mean) / np.clip(std, a_min=self.eps, a_max=None)
 
+
 class Normalize:
     """
     Apply simple min-max scaling to a given input tensor, i.e. shrinks the range of the data in a fixed range of [-1, 1].
@@ -169,6 +165,49 @@ class Normalize:
     def __call__(self, m):
         norm_0_1 = (m - self.min_value) / self.value_range
         return np.clip(2 * norm_0_1 - 1, -1, 1)
+    
+class BackgroundSubtract:
+    """
+    Background Subtract A Certain Percentage of the Range
+    """
+    
+    def __init__(self,random_state,scale=(0.0,0.15), **kwargs):
+        self.random_state = random_state
+        self.scale = scale
+        
+    def __call__(self,m):
+        
+        m -= np.max(m) * self.random_state.uniform(0,self.scale)
+        m[m<0] = 0
+    
+        return m
+    
+class AdditiveGaussianNoise:
+    def __init__(self, random_state, scale=(0.0, 0.15), execution_probability=0.25, **kwargs):
+        self.execution_probability = execution_probability
+        self.random_state = random_state
+        self.scale = scale
+
+    def __call__(self, m):
+        if self.random_state.uniform() < self.execution_probability:
+            std = self.random_state.uniform(self.scale[0], self.scale[1])
+            gaussian_noise = self.random_state.normal(0, std, size=m.shape)
+            return m + gaussian_noise
+        return m
+
+
+class AdditivePoissonNoise:
+    def __init__(self, random_state, lam=(0.0, 0.15), execution_probability=0.25, **kwargs):
+        self.execution_probability = execution_probability
+        self.random_state = random_state
+        self.lam = lam
+
+    def __call__(self, m):
+        if self.random_state.uniform() < self.execution_probability:
+            lam = self.random_state.uniform(self.lam[0], self.lam[1])
+            poisson_noise = self.random_state.poisson(lam, size=m.shape)
+            return m + poisson_noise
+        return m
 
 class ToTensor:
     """
@@ -216,7 +255,7 @@ class Transformer:
     def __init__(self, phase_config, base_config):
         self.phase_config = phase_config
         self.config_base = base_config
-        self.seed = GLOBAL_RANDOM_STATE.randint(10000000)
+        self.seed = int(time.time())
 
     def raw_transform(self):
         return self._create_transform('raw')

@@ -117,7 +117,11 @@ class AETUNetTrainer:
             True if the training should be terminated immediately, False otherwise
         """
         train_losses = utils.RunningAverage()
-        train_eval_scores = utils.RunningAverage()
+
+        train_eval_scores = {} 
+        for key in self.eval_criterion.metrics:
+            train_eval_scores.update({key: utils.RunningAverage()})
+
 
         # sets the model in training mode
         self.model.train()
@@ -130,6 +134,7 @@ class AETUNetTrainer:
 
             output, loss = self._forward_pass(input, target)
 
+            # Will Need to Generalize These Lines for Multiple Branches (Segmentation + Prediction / Regression)
             train_losses.update(loss.item(), self._batch_size(input))
 
             # compute gradients and update parameters
@@ -169,13 +174,20 @@ class AETUNetTrainer:
                 
                 # compute eval criterion
                 if not self.skip_train_validation:
+                    self.model.eval()
+                    output, loss = self._forward_pass(input, target)
                     eval_score = self.eval_criterion(output, target)
-                    train_eval_scores.update(eval_score.item(), self._batch_size(input))
+
+                    for key in eval_score.keys():
+                        train_eval_scores[key].update(eval_score[key].item(), self._batch_size(input))
+                    self.model.train()
 
                 # log stats, params and images
                 logger.info(
-                    f'Training stats. Loss: {train_losses.avg}. Evaluation score: {train_eval_scores.avg}')
-                self._log_stats('train', train_losses.avg, train_eval_scores.avg)
+                    f'Training stats. Loss: {train_losses.avg}. Evaluation score: {train_eval_scores[self.eval_criterion.metric].avg}')
+                
+                self._log_stats('train', train_losses.avg, train_eval_scores)
+                  
                 self._log_params()
                 self._log_images(input, target, output, 'train_')
 
@@ -207,7 +219,10 @@ class AETUNetTrainer:
         logger.info('Validating...')
 
         val_losses = utils.RunningAverage()
-        val_scores = utils.RunningAverage()
+
+        val_scores = {} 
+        for key in self.eval_criterion.metrics:
+            val_scores.update({key: utils.RunningAverage()})
 
         with torch.no_grad():
             for i, t in enumerate(self.loaders['val']):
@@ -222,15 +237,17 @@ class AETUNetTrainer:
                     self._log_images(input, target, output, 'val_')
 
                 eval_score = self.eval_criterion(output, target)
-                val_scores.update(eval_score.item(), self._batch_size(input))
+
+                for key in eval_score.keys():
+                        val_scores[key].update(eval_score[key].item(), self._batch_size(input))
 
                 if self.validate_iters is not None and self.validate_iters <= i:
                     # stop validation
-                    break
-
-            self._log_stats('val', val_losses.avg, val_scores.avg)
-            logger.info(f'Validation finished. Loss: {val_losses.avg}. Evaluation score: {val_scores.avg}')
-            return val_scores.avg
+                    break            
+            
+            self._log_stats('val', val_losses.avg, val_scores)
+            logger.info(f'Validation finished. Loss: {val_losses.avg}. Evaluation score: {val_scores[self.eval_criterion.metric].avg}')
+            return val_scores[self.eval_criterion.metric].avg
 
     def _split_training_batch(self, t):
         def _move_to_device(input):
@@ -288,11 +305,19 @@ class AETUNetTrainer:
         lr = self.optimizer.param_groups[0]['lr']
         self.writer.add_scalar('learning_rate', lr, self.num_iterations)
 
-    def _log_stats(self, phase, loss_avg, eval_score_avg):
-        tag_value = {
-            f'{phase}_loss_avg': loss_avg,
-            f'{phase}_eval_score_avg': eval_score_avg
-        }
+    # def _log_stats(self, phase, loss_avg, eval_score_avg):
+    #     tag_value = {
+    #         f'{phase}_loss_avg': loss_avg,
+    #         f'{phase}_eval_score_avg': eval_score_avg
+    #     }
+
+    #     for tag, value in tag_value.items():
+    #         self.writer.add_scalar(tag, value, self.num_iterations)
+    
+    def _log_stats(self, phase, loss_avg, eval_scores):
+        tag_value = { f'{phase}_loss_avg': loss_avg}
+        for key in eval_scores.keys():
+            tag_value.update({'{}_{}_avg'.format(phase,key): eval_scores[key].avg})
 
         for tag, value in tag_value.items():
             self.writer.add_scalar(tag, value, self.num_iterations)
