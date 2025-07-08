@@ -2,7 +2,7 @@
 
 ## ⚠️ This Repository is No Longer Actively Maintained
 
-For the **latest developments**, **modern 3D CNN architectures**, and **more efficient pipelines**, please visit my new repository:
+For the **latest developments**, **modern 3D CNN architectures**, and **more efficient pipelines**, please visit my latest repository:
 
 👉 **[Octopi: https://github.com/chanzuckerberg/octopi](https://github.com/chanzuckerberg/octopi)**
 
